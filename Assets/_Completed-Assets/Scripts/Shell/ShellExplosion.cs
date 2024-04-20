@@ -29,7 +29,7 @@ namespace Complete
             Collider[] colliders = Physics.OverlapSphere (transform.position, m_ExplosionRadius, m_TankMask);
 
             // Go through all the colliders if owned
-            if (photonView.IsMine)
+            if (!bDummy)
             {
                 for (int i = 0; i < colliders.Length; i++)
                 {
@@ -71,11 +71,7 @@ namespace Complete
             ParticleSystem.MainModule mainModule = m_ExplosionParticles.main;
             Destroy (m_ExplosionParticles.gameObject, mainModule.duration);
 
-            // Destroy the shell.
-            if (photonView.IsMine)
-            {
-                PhotonNetwork.Destroy(gameObject);
-            }
+            Destroy(gameObject);
         }
 
 

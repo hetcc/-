@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using Photon.Realtime;
+using Photon.Pun;
 
-public class TankHealth : MonoBehaviour
+public class TankHealth : MonoBehaviourPun, IPunObservable
 {
     public float m_StartingHealth = 100f;               // The amount of health each tank starts with.
     public Slider m_Slider;                             // The slider to represent how much health the tank currently has.
@@ -40,22 +42,29 @@ public class TankHealth : MonoBehaviour
         SetHealthUI();
     }
 
+    // Sync
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+
+    }
 
     public void TakeDamage(float amount)
     {
-        // Reduce current health by the amount of damage done.
-        m_CurrentHealth -= amount;
-
-        // Change the UI elements appropriately.
-        SetHealthUI();
-
-        // If the current health is at or below zero and it has not yet been registered, call OnDeath.
-        if (m_CurrentHealth <= 0f && !m_Dead)
+        if (PhotonNetwork.IsConnected)
         {
-            OnDeath();
+            // Reduce current health by the amount of damage done.
+            m_CurrentHealth -= amount;
+
+            // Change the UI elements appropriately.
+            SetHealthUI();
+
+            // If the current health is at or below zero and it has not yet been registered, call OnDeath.
+            if (m_CurrentHealth <= 0f && !m_Dead)
+            {
+                OnDeath();
+            }
         }
     }
-
 
     private void SetHealthUI()
     {

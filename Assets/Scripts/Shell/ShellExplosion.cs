@@ -48,11 +48,14 @@ public class ShellExplosion : MonoBehaviourPun
                 if (!targetHealth)
                     continue;
 
+                // Find the photon id for RPC
+                int viewID = targetRigidbody.GetComponent<PhotonView>().ViewID;
+
                 // Calculate the amount of damage the target should take based on it's distance from the shell.
                 float damage = CalculateDamage(targetRigidbody.position);
 
                 // Deal this damage to the tank.
-                targetHealth.TakeDamage(damage);
+                photonView.RPC("RPCDealDamage", RpcTarget.All, viewID, damage) ;
             }
         }
 
@@ -76,6 +79,11 @@ public class ShellExplosion : MonoBehaviourPun
         }
     }
 
+    [PunRPC]
+    public void RPCDealDamage(int viewID, float damage)
+    {
+        PhotonView.Find(viewID).GetComponent<TankHealth>().TakeDamage(damage);
+    }
 
     private float CalculateDamage(Vector3 targetPosition)
     {

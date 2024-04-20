@@ -102,7 +102,7 @@ public class TankShooting : MonoBehaviourPun
 
             // Create an instance of the shell and store a reference to it's rigidbody.
             GameObject shellObj = PhotonNetwork.Instantiate(ShellPrefab, m_FireTransform.position, m_FireTransform.rotation);
-
+            int viewID = shellObj.GetComponent<PhotonView>().ViewID;
             Rigidbody shellInstance = shellObj.GetComponent<Rigidbody>();
 
             // Set the shell's velocity to the launch force in the fire position's forward direction.
@@ -115,13 +115,13 @@ public class TankShooting : MonoBehaviourPun
             // Reset the launch force.  This is a precaution in case of missing button events.
             m_CurrentLaunchForce = m_MinLaunchForce;
 
-            photonView.RPC("RPCFire", RpcTarget.Others);
+            photonView.RPC("RPCFire", RpcTarget.Others, viewID, shellInstance.velocity);
         }
     }
 
     [PunRPC]
-    public void RPCFire()
+    public void RPCFire(int viewID, Vector3 velocity)
     {
-    
+        PhotonView.Find(viewID).GetComponent<Rigidbody>().velocity = velocity;
     }
 }
