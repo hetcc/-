@@ -8,12 +8,35 @@ using System.Collections.Generic;
 
 public class NetGameManager : MonoBehaviourPunCallbacks
 {
+    private static NetGameManager instance;
+
+    public static NetGameManager Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = FindObjectOfType<NetGameManager>();
+            }
+            return instance;
+        }
+    }
+    private void Awake()
+    {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
+
     public int m_NumRoundsToWin = 5;            // The number of rounds a single player has to win to win the game.
     public float m_StartDelay = 3f;             // The delay between the start of RoundStarting and RoundPlaying phases.
     public float m_EndDelay = 3f;               // The delay between the end of RoundPlaying and RoundEnding phases.
     public CameraControl m_CameraControl;       // Reference to the CameraControl script for control during different phases.
     public Text m_MessageText;                  // Reference to the overlay Text to display winning text, etc.
     public string TankPrefab;
+    public string ScoreBoardPrefab = "ScoreBoard";
+
     public Transform[] SpawnPoints;
 
     private int m_RoundNumber;                  // Which round the game is currently on.
@@ -26,7 +49,8 @@ public class NetGameManager : MonoBehaviourPunCallbacks
 
     const float k_MaxDepenetrationVelocity = float.PositiveInfinity;
 
-        
+    public ScoreBoard score;
+
     private void Start()
     {
         // This line fixes a change to the physics engine.
@@ -39,10 +63,52 @@ public class NetGameManager : MonoBehaviourPunCallbacks
         SpawnAllTanks();
         SetCameraTargets();
 
+        if (PhotonNetwork.IsConnected && PhotonNetwork.IsMasterClient)
+        {
+            score = PhotonNetwork.Instantiate(ScoreBoardPrefab, Vector3.zero, Quaternion.identity).GetComponent<ScoreBoard>();
+            int viewID = score.GetComponent<PhotonView>().ViewID;
+            photonView.RPC("RPCAddScoreReference", RpcTarget.Others, viewID);
+        }
+
         // Once the tanks have been created and the camera is using them as targets, start the game.
         m_MessageText.gameObject.SetActive(false);
     }
 
+    [PunRPC]
+    public void RPCAddScoreReference(int viewID)
+    {
+        PhotonView pv = PhotonView.Find(viewID);
+        if (pv != null)
+        {
+            score = pv.GetComponent<ScoreBoard>();
+        }
+    }
+
+    public void SetGame()
+    {
+        foreach (GameObject i in currentPlayerTanks)
+        {
+            if (i.GetComponent<PhotonView>().IsMine)
+            {
+                PhotonNetwork.Destroy(i);
+            }
+        }
+        currentPlayerTanks = new List<GameObject>();
+        SpawnAllTanks();
+        SetCameraTargets();
+    }
+
+    public void ChangeScore()
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            score.ChangeScore(2, 1);
+        }
+        else 
+        {
+            score.ChangeScore(1, 1);
+        }
+    }
 
     private void SpawnAllTanks()
     {
@@ -129,24 +195,5 @@ public class NetGameManager : MonoBehaviourPunCallbacks
             message = m_GameWinner.m_ColoredPlayerText + " WINS THE GAME!";
 
         return message;
-    }
-
-
-    // This function is used to turn all the tanks back on and reset their positions and properties.
-    private void ResetAllTanks()
-    {
-
-    }
-
-
-    private void EnableTankControl()
-    {
-
-    }
-
-
-    private void DisableTankControl()
-    {
-
     }
 }

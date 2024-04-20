@@ -93,5 +93,10 @@ public class TankHealth : MonoBehaviourPun, IPunObservable
 
         // Turn the tank off.
         gameObject.SetActive(false);
+
+        if (PhotonNetwork.IsConnected && photonView.IsMine)
+        {
+            NetGameManager.Instance.ChangeScore();
+        }
     }
 }
